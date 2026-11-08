@@ -1,5 +1,8 @@
 // Copyright 2026 Andrija Panic and the OpenVDDK contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Modified by the ProxCenter project in 2026: features and the resource pool
+// request are sent from NFC version 9 (docs/observations/NBD-0032).
 
 package nfc
 

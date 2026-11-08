@@ -10,3 +10,9 @@ listed in THIRD-PARTY-NOTICES.
 VMware, vSphere, vCenter, ESXi and VDDK are trademarks of Broadcom Inc. or
 its subsidiaries. OpenVDDK is independent and is not affiliated with or
 endorsed by Broadcom Inc. or its subsidiaries.
+
+This build is a modified version of OpenVDDK, published by the ProxCenter
+project (https://github.com/adminsyspro/openvddk). It is not an official
+OpenVDDK release and is not endorsed by the OpenVDDK authors. The changes
+from the official release it is based on are the commits on the
+`proxcenter` branch of that repository; each modified file says so.

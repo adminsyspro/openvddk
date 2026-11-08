@@ -1,5 +1,11 @@
 # OpenVDDK binary kit
 
+> **Modified build.** This kit is built by the ProxCenter project from
+> https://github.com/adminsyspro/openvddk (branch `proxcenter`), an
+> OpenVDDK release with ProxCenter's fixes on top. It is not an official
+> OpenVDDK release; report problems with it to ProxCenter, not to the
+> OpenVDDK project. NOTICE lists what changed.
+
 OpenVDDK is an independent implementation of the VixDiskLib 8.0.3 interface:
 a drop-in replacement for `libvixDiskLib.so.8.0.3`, written from scratch
 using only public documentation and black-box testing, with no VMware code
