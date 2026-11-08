@@ -44,6 +44,7 @@ type fakeHost struct {
 	reads      int               // read requests received
 	sessionTok string            // the ticket's session ID ("token-1" when empty)
 	esxi67     bool              // behave as ESXi 6.7 (NBD-0005): no SHA-256 in the greeting, NFC version 2
+	esxi70ga   bool              // behave as ESXi 7.0.0 GA (NBD-0032): NFC version 5, no features or resource pool
 
 	authTLS   func(*tls.Config) // adjusts the authentication service's TLS (nil: Go's defaults)
 	streamTLS func(*tls.Config) // adjusts the NFC stream's TLS
@@ -245,9 +246,12 @@ func (f *fakeHost) session(c net.Conn) error {
 		return err
 	}
 	v := classic(msgVersion)
-	if f.esxi67 {
+	switch {
+	case f.esxi67:
 		binary.LittleEndian.PutUint32(v[4:], 2)
-	} else {
+	case f.esxi70ga:
+		binary.LittleEndian.PutUint32(v[4:], 5)
+	default:
 		binary.LittleEndian.PutUint32(v[4:], 9)
 	}
 	c.Write(v)
@@ -262,6 +266,8 @@ func (f *fakeHost) session(c net.Conn) error {
 			return err
 		}
 		f.gotName = string(names[:nl])
+	}
+	if !f.esxi67 && !f.esxi70ga {
 		if _, err := next(msgFeatures); err != nil {
 			return err
 		}
@@ -301,6 +307,11 @@ func (f *fakeHost) session(c net.Conn) error {
 		case aioResPool:
 			if f.esxi67 {
 				return errors.New("resource pool request to a version 2 host")
+			}
+			if f.esxi70ga {
+				// The host ends the session, as ESXi 7.0.0 GA does.
+				c.Write(classic(msgSessionComplete))
+				return errors.New("resource pool request to a version 5 host")
 			}
 			reply(typ, make([]byte, 4), nil)
 		case aioOpenFile:
@@ -485,6 +496,47 @@ func TestESXi67Session(t *testing.T) {
 	tk.SessionID = "token-1\r\nPROXY other"
 	if _, err := Dial(context.Background(), addr, tk, Options{Timeout: 5 * time.Second}); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("line break in the session ID: got %v, want ErrProtocol", err)
+	}
+}
+
+// A session with ESXi 7.0.0 GA as the reference holds it (NBD-0032): the
+// host answers NFC version 5; connection data is sent, features and the
+// resource pool request are not (the host ends the session on the latter).
+func TestESXi70GASession(t *testing.T) {
+	f := newFakeHost(t)
+	f.esxi70ga = true
+	tk, addr, done := startFake(t, f)
+	c, err := Dial(context.Background(), addr, tk, Options{Timeout: 10 * time.Second, Client: "vddk", Operation: "nbdmode"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Version != 5 {
+		t.Fatalf("version %d", c.Version)
+	}
+	if f.gotName != "vddk" {
+		t.Fatalf("connection data name %q", f.gotName)
+	}
+	h, err := c.OpenDisk("[ds] vm/vm.vmdk")
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf := make([]byte, 128<<10)
+	if err := c.Read(h, 1<<20, buf); err != nil {
+		t.Fatal(err)
+	}
+	for i, b := range buf {
+		if b != diskByte(1<<20+uint64(i)) {
+			t.Fatalf("byte %d", i)
+		}
+	}
+	if err := c.CloseDisk(h); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatalf("host side: %v", err)
 	}
 }
 

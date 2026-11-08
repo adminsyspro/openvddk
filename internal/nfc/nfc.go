@@ -69,10 +69,15 @@ const (
 
 	clientVersion = 11 // what the reference sends; the host answers with its own
 	minVersion    = 2  // ESXi 6.7 answers 2 (NBD-0005)
-	// Connection data, features and the resource pool need version 3 or
-	// later; to a host that answers 2 the reference sends none of them.
+	// Connection data needs version 3 or later; to a host that answers 2
+	// the reference sends none of the three messages below.
 	modernVersion = 3
-	features      = 3
+	// Features and the resource pool request need version 9 or later.
+	// ESXi 7.0.0 GA answers 5 and closes the session on the resource pool
+	// request; to it the reference sends connection data but neither of
+	// these two (NBD-0032). ESXi 7.0.3 answers 9 and gets both (NET-0003).
+	poolVersion = 9
+	features    = 3
 )
 
 // AIO frames have a 16-byte header: magic, type, payload size, operation
@@ -421,16 +426,20 @@ func (c *Conn) handshake(o Options) error {
 	if c.Version < minVersion {
 		return fmt.Errorf("%w: host NFC version %d", ErrProtocol, c.Version)
 	}
-	modern := c.Version >= modernVersion
-	msgs := [][]byte{classic(msgAIOSession)}
-	if modern {
+	var msgs [][]byte
+	if c.Version >= modernVersion {
 		cd := classic(msgConnectionData)
 		binary.LittleEndian.PutUint32(cd[4:], uint32(len(name)))
 		binary.LittleEndian.PutUint32(cd[8:], uint32(len(opName)))
+		msgs = append(msgs, cd, []byte(name), []byte(opName))
+	}
+	pool := c.Version >= poolVersion
+	if pool {
 		f := classic(msgFeatures)
 		binary.LittleEndian.PutUint32(f[4:], features)
-		msgs = [][]byte{cd, []byte(name), []byte(opName), f, classic(msgAIOSession)}
+		msgs = append(msgs, f)
 	}
+	msgs = append(msgs, classic(msgAIOSession))
 	// One write per message, as the reference sends them: inside TLS each
 	// becomes its own record, and the host waits for the next message on
 	// the socket (NBDSSL stalled when several shared one record).
@@ -454,12 +463,12 @@ func (c *Conn) handshake(o Options) error {
 	if _, _, err := c.call(aioSockOpts, sock, nil, 12); err != nil {
 		return err
 	}
-	if !modern {
+	if !pool {
 		return nil
 	}
-	pool := make([]byte, 4)
-	binary.LittleEndian.PutUint32(pool, 1)
-	_, _, err = c.call(aioResPool, pool, nil, 4)
+	tag := make([]byte, 4)
+	binary.LittleEndian.PutUint32(tag, 1)
+	_, _, err = c.call(aioResPool, tag, nil, 4)
 	return err
 }
 
