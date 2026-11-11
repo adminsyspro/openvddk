@@ -26,7 +26,8 @@ library binary distributed before the source was published (SHA-256
 Go module path changed to `github.com/openvddk/openvddk`, and the library
 records the commit it was built from. There is no functional difference.
 
-The repository is read-only for now: pull requests are not accepted yet.
+Pull requests are welcome: please read CONTRIBUTING.md first, and for
+anything larger than a small fix open an issue before you start.
 Problem reports and questions are welcome as issues (see "Reporting
 problems" below).
 

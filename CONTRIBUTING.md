@@ -3,13 +3,6 @@
 Thank you for helping. A few rules keep the project clean, and safe for
 everyone who builds on it or ships it.
 
-## Status
-
-The repository is read-only for now: pull requests are not accepted yet.
-Please report problems and ask questions as issues, as README.md
-("Reporting problems") describes. The rules below apply once
-contributions are opened.
-
 ## The clean-room rule
 
 OpenVDDK reproduces the behaviour of VMware's VixDiskLib, learned only from
@@ -60,6 +53,19 @@ are kept as they are.
 - A change of behaviour comes with a test, and a newly observed behaviour
   of the reference library with its record.
 - Writes stay unsupported by design (D-0027).
+
+## Pull requests
+
+- For anything larger than a small fix, open an issue first and describe
+  the change, so the approach is agreed before you spend time on it.
+- Keep a pull request to one topic, and fill in its template: what changes
+  and why, the ESXi and vCenter versions you tested against (with the NFC
+  version from the log where it matters), the transports and how you
+  tested.
+- Nothing runs automatically on pull requests. The maintainer reviews the
+  change, runs the tests and, where it changes what goes over the wire,
+  re-tests it against real hosts before merging.
+- Only the maintainer merges.
 
 ## Security
 
