@@ -73,7 +73,7 @@ func (s *Session) ReadDescriptor(ctx context.Context, datastore, path string) ([
 	if err := ds.FindInventoryPath(ctx); err != nil {
 		return nil, err
 	}
-	rc, _, err := ds.Download(ctx, rel, &soap.DefaultDownload)
+	rc, err := download(ctx, ds, rel, soap.DefaultDownload)
 	if err != nil {
 		notFound := strings.Contains(err.Error(), "404 Not Found")
 		if notFound || strings.Contains(err.Error(), "401 Unauthorized") {
@@ -91,6 +91,31 @@ func (s *Session) ReadDescriptor(ctx context.Context, datastore, path string) ([
 	}
 	defer rc.Close()
 	return io.ReadAll(io.LimitReader(rc, MaxDescriptorBytes))
+}
+
+// download is Datastore.Download with each '+' of the file's path sent as
+// %2B. Go leaves '+' as it is in a URL path, where it is valid, but the
+// datastore file service of vCenter and ESXi reads it as a space: a file
+// whose name holds '+' (a VM named "a+b" keeps its disk in a+b/a+b.vmdk)
+// was answered 404 and taken for missing (NET-0006). Every other character
+// goes out as before.
+func download(ctx context.Context, ds *object.Datastore, rel string, p soap.Download) (io.ReadCloser, error) {
+	u, ticket, err := ds.ServiceTicket(ctx, rel, p.Method)
+	if err != nil {
+		return nil, err
+	}
+	if ticket != nil {
+		p.Ticket = ticket
+		p.Close = true // as Datastore.Download does: no Keep-Alive to the host
+	}
+	u.RawPath = plusEscaped(u.EscapedPath())
+	rc, _, err := ds.Client().Download(ctx, u, &p)
+	return rc, err
+}
+
+// plusEscaped returns an escaped URL path with each '+' written %2B.
+func plusEscaped(escapedPath string) string {
+	return strings.ReplaceAll(escapedPath, "+", "%2B")
 }
 
 // datastoreFilePrivileges are what the datastore file service checks: with

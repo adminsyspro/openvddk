@@ -482,7 +482,7 @@ func (p Platform) datastoreOf(ctx context.Context, datastore string) (*object.Da
 // fileExists asks the datastore file service (an HTTP HEAD, no vCenter
 // task) whether rel exists on ds.
 func fileExists(ctx context.Context, ds *object.Datastore, rel string) (bool, error) {
-	rc, _, err := ds.Download(ctx, rel, &soap.Download{Method: "HEAD"})
+	rc, err := download(ctx, ds, rel, soap.Download{Method: "HEAD"})
 	if err == nil {
 		rc.Close()
 		return true, nil

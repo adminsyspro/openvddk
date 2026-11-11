@@ -113,6 +113,7 @@ it. Performance figures are not published.
 | [NET-0003](NET-0003-nbd-read-over-nfc.md) | The reference's NBD read: descriptor keys and data over NFC |
 | [NET-0004](NET-0004-skipz-over-nfc.md) | Reads with zeros left out (skipz) over NFC |
 | [NET-0005](NET-0005-direct-esxi-connection.md) | The reference on a direct connection to an ESXi host |
+| [NET-0006](NET-0006-file-service-plus-in-path.md) | A '+' in a datastore file's path (the file service reads it as a space) |
 
 When the reference behaves worse than the candidate in a way a user would
 notice, the record says so and the item is added to
