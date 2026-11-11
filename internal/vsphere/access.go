@@ -1,5 +1,8 @@
 // Copyright 2026 Andrija Panic and the OpenVDDK contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Modified by the ProxCenter project in 2026: a '+' of a datastore
+// file path is sent as %2B (docs/observations/NET-0006).
 
 package vsphere
 

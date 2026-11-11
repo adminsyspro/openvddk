@@ -1,5 +1,7 @@
 // Copyright 2026 Andrija Panic and the OpenVDDK contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Added by the ProxCenter project in 2026 (docs/observations/NET-0006).
 
 package vsphere
 
